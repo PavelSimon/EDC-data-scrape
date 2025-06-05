@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 class="mb-4">Data Visualization</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Filter Data</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+                </div>
+                <div class="col-md-5">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Flexibility and Shared Electricity Over Time</h5>
+                    <div id="graph"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var graphData = {{ graph_data | safe }};
+        
+        var layout = {
+            title: 'OKTE Data Analysis',
+            xaxis: {
+                title: 'Date and Period',
+                tickangle: -45
+            },
+            yaxis: {
+                title: 'Value'
+            },
+            legend: {
+                orientation: 'h',
+                y: -0.2
+            }
+        };
+
+        Plotly.newPlot('graph', graphData, layout);
+    </script>
+{% endblock %} 

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import sqlite3
 import pandas as pd
 from scrape_okte import scrape_data_for_date
+import json
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Required for flash messages
@@ -66,6 +67,60 @@ def clear_data():
     conn.close()
     flash('Database cleared successfully', 'success')
     return redirect(url_for('index'))
+
+@app.route('/graph')
+def graph():
+    conn = get_db_connection()
+    
+    # Get date filters from query parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Build the query with optional date filtering
+    query = 'SELECT * FROM okte_data'
+    params = []
+    
+    if start_date and end_date:
+        query += ' WHERE datum BETWEEN ? AND ?'
+        params.extend([start_date, end_date])
+    elif start_date:
+        query += ' WHERE datum >= ?'
+        params.append(start_date)
+    elif end_date:
+        query += ' WHERE datum <= ?'
+        params.append(end_date)
+    
+    query += ' ORDER BY datum, zuctovacia_perioda'
+    
+    # Execute query with parameters
+    data = pd.read_sql_query(query, conn, params=params)
+    conn.close()
+    
+    # Prepare data for plotting
+    dates = (data['datum'] + ' ' + data['zuctovacia_perioda']).tolist()
+    
+    graph_data = [
+        {
+            'x': dates,
+            'y': data['aktivovana_agregovana_flexibilita_kladna'].tolist(),
+            'type': 'scatter',
+            'name': 'Positive Flexibility'
+        },
+        {
+            'x': dates,
+            'y': data['aktivovana_agregovana_flexibilita_zaporna'].tolist(),
+            'type': 'scatter',
+            'name': 'Negative Flexibility'
+        },
+        {
+            'x': dates,
+            'y': data['zdielana_elektrina'].tolist(),
+            'type': 'scatter',
+            'name': 'Shared Electricity'
+        }
+    ]
+    
+    return render_template('graph.html', graph_data=json.dumps(graph_data))
 
 if __name__ == '__main__':
     app.run(debug=True) 
