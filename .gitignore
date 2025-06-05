@@ -32,8 +32,6 @@ ENV/
 *.swo
 
 # Project specific
-okte_data.db
-*.db
 *.sqlite
 *.sqlite3
 
