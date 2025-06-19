@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Daily Summary</h1>
+    <form method="post">
+        <label for="start_date">Start Date:</label>
+        <input type="date" id="start_date" name="start_date" required>
+        
+        <label for="end_date">End Date:</label>
+        <input type="date" id="end_date" name="end_date" required>
+        
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if data %}
+    <h2>Aggregated Data from {{ start_date }} to {{ end_date }}</h2>
+    <caption class="text-muted">Showing electricity flexibility and sharing data for the selected period</caption>
+    <div class="table-responsive">
+      <table class="table table-striped table-hover table-bordered">
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Positive Flexibility</th>
+            <th scope="col">Negative Flexibility</th>
+            <th scope="col">Shared Electricity</th>
+        </tr>
+        {% for record in data %}
+        <tr>
+            <td>{{ record['datum'] }}</td>
+            <td>{{ record['positive_flexibility'] }}</td>
+            <td>{{ record['negative_flexibility'] }}</td>
+            <td>{{ record['shared_electricity'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No data available for the selected date range.</p>
+    {% endif %}
+{% endblock %}

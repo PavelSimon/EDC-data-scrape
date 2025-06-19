@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime, timedelta
 import sqlite3
 import pandas as pd
@@ -12,6 +12,49 @@ def get_db_connection():
     conn = sqlite3.connect('okte_data.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+def get_aggregated_data(start_date, end_date):
+    conn = get_db_connection()
+    query = f'''
+        SELECT datum, SUM(aktivovana_agregovana_flexibilita_kladna) AS positive_flexibility,
+               SUM(aktivovana_agregovana_flexibilita_zaporna) AS negative_flexibility,
+               SUM(zdielana_elektrina) AS shared_electricity
+        FROM okte_data
+        WHERE datum BETWEEN ? AND ?
+        GROUP BY datum
+    '''
+    params = (start_date, end_date)
+    data = pd.read_sql_query(query, conn, params=params)
+    conn.close()
+    return data
+
+@app.route('/daily_summary', methods=['GET', 'POST'])
+def daily_summary():
+    if request.method == 'POST':
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        
+        try:
+            # Convert string dates to datetime objects
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            
+            # Validate date range
+            if end < start:
+                flash('End date must be after start date', 'error')
+                return redirect(url_for('daily_summary'))
+            
+            # Get aggregated data for the selected date range
+            data = get_aggregated_data(start_date, end_date)
+            
+            return render_template('daily_summary.html', data=data.to_dict(orient='records'), start_date=start_date, end_date=end_date)
+            
+        except ValueError:
+            flash('Invalid date format. Please use YYYY-MM-DD', 'error')
+            return redirect(url_for('daily_summary'))
+    
+    # Render the form on GET request
+    return render_template('daily_summary.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -123,4 +166,4 @@ def graph():
     return render_template('graph.html', graph_data=json.dumps(graph_data))
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)
